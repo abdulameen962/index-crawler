@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /api/funds
+Disallow: /api/crawl/
+
+Sitemap: /sitemap.xml

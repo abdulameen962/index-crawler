@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Primary SEO Meta Tags -->
+  <title>NGX Index Fund Replicator | Nigerian ETF & Portfolio Replication Calculator</title>
+  <meta name="title" content="NGX Index Fund Replicator | Nigerian ETF & Portfolio Replication Calculator" />
+  <meta name="description" content="Calculate exact shares, weights, and transaction costs to replicate Nigerian Exchange (NGX) index funds with zero cash drag. Supports Oil & Gas and Afrinvest Dividend Yield." />
+  <meta name="keywords" content="NGX index fund replication, Nigerian stock market ETF calculator, NGX Oil and Gas index, Afrinvest dividend yield index, Nigerian stock portfolio rebalancing, NGX shares calculator" />
+  <meta name="author" content="NGX Index Replicator" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="/" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+  <!-- OpenGraph / Social Sharing -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="/" />
+  <meta property="og:title" content="NGX Index Fund Replicator | Nigerian ETF & Portfolio Calculator" />
+  <meta property="og:description" content="Zero-cash-drag portfolio replication calculator for Nigerian Exchange (NGX) index funds. Calculate exact shares to buy with statutory fee estimates." />
+  <meta property="og:image" content="/static/og-preview.png" />
+
+  <!-- Twitter Card -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="NGX Index Fund Replicator" />
+  <meta property="twitter:description" content="Zero-cash-drag portfolio replication calculator for Nigerian Exchange (NGX) index funds." />
+
+  <!-- Structured Data: JSON-LD for Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "NGX Index Fund Replicator",
+    "url": "https://ngx-index-calculator.onrender.com",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "All",
+    "description": "Calculates exact shares, weights, and costs to replicate Nigerian Exchange index funds like NGX Oil & Gas and Afrinvest Dividend Yield with zero cash drag.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "NGN"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I replicate an NGX index fund with exact prices?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It is best replicated through Limit Orders placed after the trading day or immediately as the market opens (10:00 AM WAT) to match verified End-of-Day prices and eliminate execution slippage."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the 15% equity concentration cap?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The 15% cap prevents single mega-cap stocks from monopolizing the index. Any excess weight above 15% is redistributed proportionally among the remaining non-capped equities."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does the calculator eliminate unallocated cash?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The system applies an iterative Greedy Tracking-Error Cash Sweep. After base integer allocations, any residual cash that can afford any single share is allocated to the most underweight equities, keeping capital efficiency near 100%."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css?v=3.2" />
+</head>
+<body>
+  <!-- Ambient background lighting effects -->
+  <div class="ambient-glow glow-top-left"></div>
+  <div class="ambient-glow glow-top-right"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+            <polyline points="16 7 22 7 22 13"></polyline>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>NGX Index Replicator</h1>
+          <p class="brand-subtitle">End-of-Day Cap-Weighted Portfolio Allocator</p>
+        </div>
+      </div>
+
+      <div class="header-right-group">
+        <div class="eod-badge" id="eodBadge">
+          <span class="pulse-dot"></span>
+          <span class="eod-badge-title" id="marketStatusText">NGX EOD Verified</span>
+          <span class="eod-badge-separator">•</span>
+          <span class="eod-badge-time" id="lastUpdatedText">Loading market data...</span>
+        </div>
+
+        <!-- Time-Locked Price Sync Button (Active 4:00 PM - 8:50 AM WAT) -->
+        <button type="button" class="btn-sync-action locked" id="btnSyncPrices" disabled>
+          <span class="sync-icon" id="syncBtnIcon">🔒</span>
+          <span class="sync-text" id="syncBtnText">Market Locked</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Grid: Controls Left, Dashboard Right -->
+    <main class="dashboard-grid">
+      <!-- Left Column: Controls & Configuration -->
+      <section class="control-panel card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="step-tag">Step 1</span>
+            <h2>Investment Parameters</h2>
+          </div>
+          <button type="button" class="btn-reset" id="btnReset" title="Reset defaults">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span>Reset</span>
+          </button>
+        </div>
+
+        <form id="calculatorForm" class="form-container" onsubmit="event.preventDefault();">
+          <!-- ETF Selector -->
+          <div class="form-group">
+            <label class="form-label">Select Target Index Fund</label>
+            <div class="fund-segmented-control" role="tablist" id="fundSelector">
+              <button type="button" class="fund-tab active" data-fund="oil_gas" role="tab" aria-selected="true">
+                <span class="fund-tab-icon">🛢️</span>
+                <span class="fund-tab-content">
+                  <span class="fund-tab-title">NGX Oil & Gas</span>
+                  <span class="fund-tab-sub">7 Equities</span>
+                </span>
+              </button>
+              <button type="button" class="fund-tab" data-fund="afribank" role="tab" aria-selected="false">
+                <span class="fund-tab-icon">📈</span>
+                <span class="fund-tab-content">
+                  <span class="fund-tab-title">Afrinvest Div Yield</span>
+                  <span class="fund-tab-sub">11 Equities</span>
+                </span>
+              </button>
+            </div>
+            <p class="form-hint" id="fundDescription">Leading petroleum and energy equities listed on the Nigerian Exchange.</p>
+          </div>
+
+          <!-- Investment Capital Input -->
+          <div class="form-group">
+            <div class="label-with-value">
+              <label for="investmentInput" class="form-label">Amount to Invest</label>
+              <span class="label-badge" id="investmentDisplay">₦50,000.00</span>
+            </div>
+            <div class="input-currency-wrapper">
+              <span class="currency-symbol">₦</span>
+              <input
+                type="number"
+                id="investmentInput"
+                name="investment"
+                value="50000"
+                min="0"
+                max="1000000000"
+                step="5000"
+                placeholder="50,000"
+                required
+              />
+            </div>
+            <!-- Quick Chips -->
+            <div class="quick-chips">
+              <button type="button" class="chip" data-amount="20000">₦20K</button>
+              <button type="button" class="chip active" data-amount="50000">₦50K</button>
+              <button type="button" class="chip" data-amount="100000">₦100K</button>
+              <button type="button" class="chip" data-amount="250000">₦250K</button>
+              <button type="button" class="chip" data-amount="500000">₦500K</button>
+              <button type="button" class="chip" data-amount="1000000">₦1M</button>
+            </div>
+          </div>
+
+          <!-- Transaction Cost Rate Slider -->
+          <div class="form-group">
+            <div class="label-with-value">
+              <label for="transactionCostInput" class="form-label">Estimated Transaction Fees</label>
+              <span class="value-highlight" id="feeRateDisplay">3.0%</span>
+            </div>
+            <div class="slider-container">
+              <input
+                type="range"
+                id="transactionCostInput"
+                min="0"
+                max="10"
+                step="0.25"
+                value="3.0"
+              />
+              <div class="slider-ticks">
+                <span>0%</span>
+                <span>2%</span>
+                <span class="tick-active">3% (Default)</span>
+                <span>5%</span>
+                <span>10%</span>
+              </div>
+            </div>
+            <p class="form-hint">Includes broker commission (1.35%), SEC, CSCS, and NGX statutory charges.</p>
+          </div>
+
+          <!-- Equity Cap Percentage Slider -->
+          <div class="form-group">
+            <div class="label-with-value">
+              <label for="capInput" class="form-label">Equity Concentration Cap</label>
+              <span class="value-highlight accent-emerald" id="capDisplay">30.0%</span>
+            </div>
+            <div class="slider-container">
+              <input
+                type="range"
+                id="capInput"
+                min="5"
+                max="50"
+                step="1"
+                value="30"
+              />
+              <div class="slider-ticks" id="capTicks">
+                <span>5%</span>
+                <span id="tick15">15% (Div Yield)</span>
+                <span id="tick30" class="tick-active">30% (Oil & Gas)</span>
+                <span>50%</span>
+              </div>
+            </div>
+            <p class="form-hint">Prevents oversized equities from dominating. Excess weight redistributes proportionally.</p>
+          </div>
+        </form>
+      </section>
+
+      <!-- Right Column: Live Results & Execution Breakdown -->
+      <section class="results-panel">
+        <!-- Trade Execution Advisory Banner -->
+        <div class="execution-advisory-card">
+          <div class="advisory-icon-wrap">⚡</div>
+          <div class="advisory-text">
+            <strong>Trade Execution Advisory:</strong> For exact price matching with this model, execute your portfolio orders using 
+            <span class="advisory-em">Limit Orders</span> placed <strong>after the trading day</strong> or 
+            <strong>immediately at the morning market open (10:00 AM WAT)</strong>. Avoid Market Orders during peak midday volatility to prevent slippage.
+          </div>
+        </div>
+
+        <!-- Summary KPI Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+            </div>
+            <div class="kpi-meta">
+              <span class="kpi-label">Stock Purchases (Net)</span>
+              <span class="kpi-value" id="kpiNetCost">₦0.00</span>
+              <span class="kpi-subtext" id="kpiNetPct">0.0% of capital</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div class="kpi-meta">
+              <span class="kpi-label">Transaction Fees</span>
+              <span class="kpi-value value-amber" id="kpiFees">₦0.00</span>
+              <span class="kpi-subtext" id="kpiFeeRate">@ 3.0% rate</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-emerald">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="kpi-meta">
+              <span class="kpi-label">Total Outlay (Cost + Fees)</span>
+              <span class="kpi-value value-emerald" id="kpiTotalCost">₦0.00</span>
+              <span class="kpi-subtext" id="kpiEfficiencyText">100.0% Deployed</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap icon-slate">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div class="kpi-meta">
+              <span class="kpi-label">Residual Cash</span>
+              <span class="kpi-value" id="kpiRemainingCash">₦0.00</span>
+              <span class="kpi-subtext" id="kpiRemainingSub">Zero Cash Drag (< 1 share)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Allocation Distribution Bar -->
+        <div class="card allocation-card">
+          <div class="allocation-header">
+            <div class="section-title">
+              <span class="dot-indicator"></span>
+              <h3>Target Weight Distribution</h3>
+            </div>
+            <span class="allocation-subtitle">Equities capped at <strong id="capLegend">15%</strong> max</span>
+          </div>
+
+          <div class="allocation-bar" id="allocationBar">
+            <!-- Dynamically populated -->
+          </div>
+          <div class="allocation-legend" id="allocationLegend">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Portfolio Execution Table -->
+        <div class="card table-card">
+          <div class="table-header">
+            <div>
+              <h3>Replication Order Sheet</h3>
+              <p class="table-subtitle">Exact shares to buy in your trading broker account</p>
+            </div>
+            <div class="table-actions">
+              <button type="button" class="btn-secondary" id="btnCopyOrder">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy Order List</span>
+              </button>
+              <button type="button" class="btn-secondary" id="btnExportCsv">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="portfolio-table">
+              <thead>
+                <tr>
+                  <th>Equity / Ticker</th>
+                  <th class="text-right">Latest Price</th>
+                  <th class="text-right">Target Weight</th>
+                  <th class="text-center highlight-col">Shares to Buy</th>
+                  <th class="text-right">Total Cost</th>
+                  <th class="text-right">Portfolio Share</th>
+                </tr>
+              </thead>
+              <tbody id="portfolioTableBody">
+                <!-- Dynamically rendered rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Educational SEO FAQ Section (Full Width Below Dashboard) -->
+    <section class="card faq-section">
+      <div class="faq-header">
+        <span class="step-tag">KNOWLEDGE BASE</span>
+        <h2>Frequently Asked Questions & Methodology</h2>
+      </div>
+
+      <div class="faq-accordion">
+        <details class="faq-item" open>
+          <summary>Why should I execute replication orders via Limit Orders?</summary>
+          <p>
+            The Nigerian Exchange (NGX) exhibits intraday liquidity variations. Executing with <strong>Limit Orders</strong> 
+            placed after the trading day or at the morning open (10:00 AM WAT) guarantees that your trades 
+            fill at official End-of-Day settlement prices used in this replication model, completely avoiding intraday market order spread slippage.
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary>How does the Greedy Cash Sweep eliminate unallocated cash?</summary>
+          <p>
+            Standard index calculations round fractional shares down, which often leaves significant residual cash (e.g., ₦19,000 unspent). 
+            Our algorithm applies a <strong>Greedy Tracking-Error Cash Sweep</strong>: it takes whatever residual cash remains and iteratively 
+            allocates additional shares to the most underweight equities until residual cash is strictly less than the cheapest stock price in the index.
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary>Why is there a 15% equity concentration cap?</summary>
+          <p>
+            Without a cap, ultra-large market cap equities (like SEPLAT or Dangote Cement) would dominate 50% to 70% of the entire fund. 
+            Capping any single equity at 15% ensures balanced diversification across all index constituents while proportionally redistributing excess weight.
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary>What transaction fees are factored into the calculation?</summary>
+          <p>
+            The default 3.0% transaction fee models all statutory and intermediary charges on the NGX, including Stockbrokerage Commission (typically 1.35%), 
+            SEC Regulatory Fee (0.30%), CSCS Transaction Fee (0.30%), Stamp Duty (0.075%), NGX Trade Fee (0.12%), and VAT.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <!-- Educational & Financial Disclaimer -->
+    <section class="disclaimer-section">
+      <div class="disclaimer-card">
+        <div class="disclaimer-header">
+          <span class="disclaimer-icon">⚠️</span>
+          <h4>Educational & Informational Purpose Only — Not Financial Advice</h4>
+        </div>
+        <p>
+          This calculator and its portfolio replication models are provided strictly for educational and informational purposes. 
+          Nothing contained herein constitutes investment, financial, trading, tax, or legal advice, nor an endorsement or solicitation of any specific security or portfolio allocation. 
+          Nigerian Exchange (NGX) stock investments carry market risk, including the possible loss of principal. We assume no liability or responsibility for financial gains, losses, broker execution discrepancies, or investment outcomes resulting from the use of this tool. Always consult a licensed stockbroker or SEC-registered investment adviser before executing trades.
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-actions">
+        <a href="mailto:abdulsanne1@gmail.com" class="btn-contact" id="btnContact" title="Send email to abdulsanne1@gmail.com">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+          </svg>
+          <span>Contact: abdulsanne1@gmail.com</span>
+        </a>
+      </div>
+      <p>NGX Index Fund Replicator • Data sourced directly from Nigerian Exchange (NGX) EOD market reports.</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+      <span class="toast-icon">✓</span>
+      <span class="toast-message" id="toastMessage">Orders copied to clipboard!</span>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=3.2"></script>
+</body>
+</html>

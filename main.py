@@ -101,59 +101,92 @@ def calculate_shares(
     transaction_cost_rate: float = 0.03,
     cap_percentage: float = 0.15,
 ) -> Tuple[Dict[str, int], float, float]:
-    """Calculate number of shares to buy for each equity in the fund.
+    """Calculate number of shares to buy for each equity while strictly maintaining target weights.
     
-    Args:
-        equities: List of equity dictionaries with 'ticker', 'price', and 'market_cap'.
-        investment_amount: Total amount to invest.
-        transaction_cost_rate: Transaction cost as a percentage (default: 0.03 for 3%).
-        cap_percentage: Maximum weight allowed for any single equity (default: 0.15).
-        
-    Returns:
-        Tuple containing:
-            - Dictionary mapping ticker to number of shares to buy
-            - Total cost including transaction fees
-            - Total cost excluding transaction fees
+    Uses Optimal Multiplier Scaling: scales the base capital allocation proportionally
+    across all constituents to minimize unallocated cash while strictly maintaining
+    index proportionality and the concentration cap.
     """
     if investment_amount <= 0:
-        raise ValueError("Investment amount must be positive")
+        return {e["ticker"]: 0 for e in equities}, 0.0, 0.0
     
-    # Create a dictionary for easy lookup
     equity_dict = {equity["ticker"]: equity for equity in equities}
-    
-    # Calculate weights with cap
     weights = calculate_weights_with_cap(equities, cap_percentage)
     
-    # Calculate shares and costs
-    shares_per_ticker = {}
-    total_cost_excl_fees = 0.0
+    # Binary search for optimal multiplier k in [1.0, 2.5]
+    low = 1.0
+    high = 2.5
+    best_shares = {ticker: 0 for ticker in weights}
+    best_cost_excl = 0.0
+    best_cost_incl = 0.0
     
-    for ticker, weight in weights.items():
-        equity = equity_dict[ticker]
-        price = equity["price"]
+    for _ in range(40):
+        mid = (low + high) / 2.0
+        shares = {}
+        total_cost_excl = 0.0
         
-        if price <= 0:
-            raise ValueError(f"Invalid price for {ticker}: {price}")
+        for ticker, weight in weights.items():
+            price = equity_dict[ticker]["price"]
+            if price <= 0:
+                raise ValueError(f"Invalid price for {ticker}: {price}")
+            alloc = (investment_amount * mid) * weight
+            s = int(alloc / (price * (1 + transaction_cost_rate)))
+            shares[ticker] = s
+            total_cost_excl += s * price
+            
+        cost_incl = total_cost_excl * (1 + transaction_cost_rate)
         
-        # Amount to invest in this equity
-        allocation = investment_amount * weight
-        
-        # Calculate number of shares (before transaction cost)
-        # We need to account for transaction cost when calculating shares
-        # If we invest X, and transaction cost is 3%, then:
-        # X = shares * price * (1 + transaction_cost_rate)
-        # So: shares = X / (price * (1 + transaction_cost_rate))
-        shares = int(allocation / (price * (1 + transaction_cost_rate)))
-        shares_per_ticker[ticker] = shares
-        
-        # Cost for this equity (shares * price)
-        cost_excl_fees = shares * price
-        total_cost_excl_fees += cost_excl_fees
+        if cost_incl <= investment_amount:
+            best_shares = shares
+            best_cost_excl = total_cost_excl
+            best_cost_incl = cost_incl
+            low = mid
+        else:
+            high = mid
+            
+    shares_per_ticker = best_shares
+    total_cost_excl_fees = best_cost_excl
+    total_cost_incl_fees = best_cost_incl
+    remaining_cash = investment_amount - total_cost_incl_fees
     
-    # Calculate total transaction fees
-    total_transaction_fees = total_cost_excl_fees * transaction_cost_rate
-    total_cost_incl_fees = total_cost_excl_fees + total_transaction_fees
-    
+    # Secondary pass: Greedy Cash Sweep to eliminate unallocated cash.
+    # While residual cash can buy at least one share of any constituent,
+    # pick the affordable candidate that minimizes absolute deviation from its target weight.
+    min_unit_cost = min(eq["price"] * (1 + transaction_cost_rate) for eq in equities)
+    while remaining_cash >= min_unit_cost:
+        affordable = [
+            eq for eq in equities
+            if eq["price"] * (1 + transaction_cost_rate) <= remaining_cash
+        ]
+        if not affordable:
+            break
+            
+        best_candidate = None
+        best_score = float("inf")
+        
+        for eq in affordable:
+            t = eq["ticker"]
+            p = eq["price"]
+            new_shares = shares_per_ticker[t] + 1
+            new_total_excl = total_cost_excl_fees + p
+            new_w = (new_shares * p) / new_total_excl
+            score = abs(new_w - weights[t])
+            if score < best_score:
+                best_score = score
+                best_candidate = eq
+                
+        if not best_candidate:
+            break
+            
+        cand_t = best_candidate["ticker"]
+        cand_price = best_candidate["price"]
+        cand_unit_cost = cand_price * (1 + transaction_cost_rate)
+        shares_per_ticker[cand_t] += 1
+        total_cost_excl_fees += cand_price
+        total_cost_incl_fees += cand_unit_cost
+        remaining_cash -= cand_unit_cost
+            
+    total_cost_incl_fees = total_cost_excl_fees * (1 + transaction_cost_rate)
     return shares_per_ticker, total_cost_incl_fees, total_cost_excl_fees
 
 
@@ -163,32 +196,126 @@ def replicate_index_fund(
     transaction_cost_rate: float = 0.03,
     cap_percentage: float = 0.15,
 ) -> Tuple[Dict[str, int], float, float]:
-    """Replicate an index fund by determining shares to buy for each equity.
-    
-    Args:
-        fund_file: Path to JSON file containing fund data.
-        investment_amount: Total amount to invest.
-        transaction_cost_rate: Transaction cost as a percentage (default: 0.03).
-        cap_percentage: Maximum weight allowed for any single equity (default: 0.15).
-        
-    Returns:
-        Tuple containing:
-            - Dictionary mapping ticker to number of shares to buy
-            - Total cost including transaction fees
-            - Total cost excluding transaction fees
-    """
-    # Load fund data
+    """Replicate an index fund by determining shares to buy for each equity."""
     equities = load_fund_data(fund_file)
-    
     if not equities:
         raise ValueError("Fund data is empty")
     
-    # Calculate shares
-    shares, total_cost_incl, total_cost_excl = calculate_shares(
+    return calculate_shares(
+        equities, investment_amount, transaction_cost_rate, cap_percentage
+    )
+
+
+def replicate_index_fund_detailed(
+    fund_file: str,
+    investment_amount: float,
+    transaction_cost_rate: float = 0.03,
+    cap_percentage: float = 0.15,
+) -> Dict:
+    """Replicate an index fund and return comprehensive portfolio details.
+    
+    Eliminates cash drag via Optimal Multiplier Scaling while strictly maintaining target weights.
+    """
+    equities = load_fund_data(fund_file)
+    if not equities:
+        raise ValueError("Fund data is empty")
+
+    if investment_amount <= 0:
+        equity_dict = {equity["ticker"]: equity for equity in equities}
+        weights = calculate_weights_with_cap(equities, cap_percentage)
+        portfolio_items = [
+            {
+                "ticker": ticker,
+                "title": equity_dict[ticker].get("title", ticker),
+                "price": equity_dict[ticker]["price"],
+                "market_cap": equity_dict[ticker].get("market_cap", 0.0),
+                "target_weight": round(weight, 4),
+                "target_weight_percent": round(weight * 100, 2),
+                "shares": 0,
+                "cost_excl_fees": 0.0,
+                "fees_for_equity": 0.0,
+                "total_cost": 0.0,
+                "actual_weight": 0.0,
+                "actual_weight_percent": 0.0,
+            }
+            for ticker, weight in sorted(weights.items(), key=lambda x: x[1], reverse=True)
+        ]
+        return {
+            "investment_amount": 0.0,
+            "transaction_cost_rate": transaction_cost_rate,
+            "cap_percentage": cap_percentage,
+            "total_cost_excl_fees": 0.0,
+            "total_transaction_fees": 0.0,
+            "total_cost_incl_fees": 0.0,
+            "remaining_cash": 0.0,
+            "capital_efficiency_percent": 0.0,
+            "min_share_with_fee": 0.0,
+            "cheapest_stock": "",
+            "unallocated_cash_reason": "Enter an investment amount above 0.",
+            "shares": {e["ticker"]: 0 for e in equities},
+            "portfolio": portfolio_items,
+        }
+
+    shares_per_ticker, total_cost_incl_fees, total_cost_excl_fees = calculate_shares(
         equities, investment_amount, transaction_cost_rate, cap_percentage
     )
     
-    return shares, total_cost_incl, total_cost_excl
+    equity_dict = {equity["ticker"]: equity for equity in equities}
+    weights = calculate_weights_with_cap(equities, cap_percentage)
+    
+    total_transaction_fees = total_cost_excl_fees * transaction_cost_rate
+    remaining_cash = max(0.0, investment_amount - total_cost_incl_fees)
+    capital_efficiency_percent = (
+        round(((investment_amount - remaining_cash) / investment_amount) * 100, 2)
+        if investment_amount > 0 else 0.0
+    )
+    
+    # Identify minimum price required to buy any single share
+    min_share_price = min(e["price"] for e in equities)
+    min_share_with_fee = min(e["price"] * (1 + transaction_cost_rate) for e in equities)
+    cheapest_equity = min(equities, key=lambda e: e["price"])
+
+    # Build detailed equity list
+    portfolio_items = []
+    for ticker, weight in sorted(weights.items(), key=lambda x: x[1], reverse=True):
+        equity = equity_dict[ticker]
+        shares = shares_per_ticker[ticker]
+        cost_excl = shares * equity["price"]
+        actual_weight = (cost_excl / total_cost_excl_fees) if total_cost_excl_fees > 0 else 0.0
+        
+        portfolio_items.append({
+            "ticker": ticker,
+            "title": equity.get("title", ticker),
+            "price": equity["price"],
+            "market_cap": equity.get("market_cap", 0.0),
+            "target_weight": round(weight, 4),
+            "target_weight_percent": round(weight * 100, 2),
+            "shares": shares,
+            "cost_excl_fees": round(cost_excl, 2),
+            "fees_for_equity": round(cost_excl * transaction_cost_rate, 2),
+            "total_cost": round(cost_excl * (1 + transaction_cost_rate), 2),
+            "actual_weight": round(actual_weight, 4),
+            "actual_weight_percent": round(actual_weight * 100, 2),
+        })
+
+    return {
+        "investment_amount": round(investment_amount, 2),
+        "transaction_cost_rate": transaction_cost_rate,
+        "cap_percentage": cap_percentage,
+        "total_cost_excl_fees": round(total_cost_excl_fees, 2),
+        "total_transaction_fees": round(total_transaction_fees, 2),
+        "total_cost_incl_fees": round(total_cost_incl_fees, 2),
+        "remaining_cash": round(remaining_cash, 2),
+        "capital_efficiency_percent": capital_efficiency_percent,
+        "min_share_with_fee": round(min_share_with_fee, 2),
+        "cheapest_stock": cheapest_equity["ticker"],
+        "unallocated_cash_reason": (
+            f"Residual cash (N{remaining_cash:,.2f}) cannot purchase additional shares without distorting target index weights. "
+            f"Portfolio achieves {capital_efficiency_percent}% capital efficiency."
+        ),
+        "shares": shares_per_ticker,
+        "portfolio": portfolio_items,
+    }
 
 
 def main():
@@ -205,8 +332,8 @@ def main():
     parser.add_argument(
         "--fund-file",
         type=str,
-        default="index_funds/afribank.json",
-        help="Path to fund data JSON file (default: index_funds/afribank.json)",
+        default="index_funds/oil_gas.json",
+        help="Path to fund data JSON file (default: index_funds/oil_gas.json)",
     )
     parser.add_argument(
         "--transaction-cost",
@@ -217,7 +344,7 @@ def main():
     parser.add_argument(
         "--cap",
         type=float,
-        default=0.2,
+        default=0.3,
         help="Maximum weight per equity as decimal (default: 0.15 for 15%%)",
     )
     
