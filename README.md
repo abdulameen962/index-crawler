@@ -207,10 +207,10 @@ This project includes a turnkey [`render.yaml`](render.yaml) Blueprint configura
 1. Sign in to your [Render Dashboard](https://dashboard.render.com/).
 2. Click **New +** → **Blueprint**.
 3. Connect your GitHub repository (`abdulameen962/index-crawler`).
-4. Render will parse `render.yaml` and create:
-   - **`ngx-index-replicator`**: Python Web Service running `uvicorn app:app --host 0.0.0.0 --port $PORT`.
-   - **`ngx-eod-crawler`**: Daily Cron Job executing `python trigger_eod_crawl.py` at `30 15 * * 1-5` (4:30 PM WAT Monday–Friday).
+4. Render will parse `render.yaml` and provision the **`ngx-index-calculator`** Web Service on the **Free Tier**.
 5. Click **Apply** to deploy!
+
+> **Automated EOD Price Sync**: Since Render requires a paid plan for cron jobs, an automated **GitHub Actions Workflow** (`.github/workflows/eod_crawl.yml`) runs Mon–Fri at 4:30 PM WAT (15:30 UTC) completely for free. It crawls fresh closing prices and auto-commits them, triggering Render's `autoDeploy`. Alternatively, you can use the **Sync EOD** button in the dashboard between 4:00 PM and 8:50 AM WAT.
 
 ---
 
