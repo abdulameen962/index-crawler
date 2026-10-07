@@ -116,6 +116,21 @@ oil_and_gas = [
 ]
 
 
+def get_ngx_headers(symbol: str) -> dict:
+    """Build standard browser headers matching NGX company directory requests."""
+    return {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": f"https://ngxgroup.com/exchange/data/company-profile/?symbol={symbol}&directory=companydirectory",
+        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+    }
+
+
 class BaseNgxSpider(scrapy.Spider):
     allowed_domains = ["ngxgroup.com"]
     symbols = []
@@ -130,15 +145,28 @@ class BaseNgxSpider(scrapy.Spider):
                 summary_url,
                 callback=self.parse_summary,
                 meta={"symbol": symbol},
-                headers={"Accept": "application/json, text/plain, */*"},
+                headers=get_ngx_headers(symbol),
             )
 
     def parse_summary(self, response):
         symbol = response.meta.get("symbol", "")
+        if response.status != 200:
+            self.logger.error(
+                f"[{symbol}] Non-200 HTTP status ({response.status}) on summary endpoint: {response.text[:250]}"
+            )
+            return
+
         try:
             data = json.loads(response.text)
-        except Exception:
-            data = {}
+        except Exception as exc:
+            self.logger.error(
+                f"[{symbol}] Non-JSON summary response ({exc}). Snippet: {response.text[:250]}"
+            )
+            return
+
+        if not isinstance(data, dict):
+            self.logger.error(f"[{symbol}] Summary payload is not a dict: {data}")
+            return
 
         price = clean_number(data.get("StockPriceCur"))
         if price == 0.0:
@@ -147,10 +175,13 @@ class BaseNgxSpider(scrapy.Spider):
             price = clean_number(data.get("OpenPrice"))
 
         company_name = data.get("CompanyName")
-        if not company_name:
-            company_name = f"{symbol} PLC ({symbol})"
-
         ticker = data.get("Symbol") or symbol
+
+        if not company_name or price <= 0.0:
+            self.logger.warning(
+                f"[{symbol}] Summary missing valid name or positive price: name='{company_name}', price={price}. Payload: {data}"
+            )
+            return
 
         trading_url = (
             f"https://ngxgroup.com/wp-json/ngx-data-widgets/v1/company/trading"
@@ -167,15 +198,29 @@ class BaseNgxSpider(scrapy.Spider):
                     "price": price,
                 },
             },
-            headers={"Accept": "application/json, text/plain, */*"},
+            headers=get_ngx_headers(symbol),
         )
 
     def parse_trading(self, response):
         item = response.meta.get("item", {})
+        symbol = response.meta.get("symbol", "")
+        if response.status != 200:
+            self.logger.error(
+                f"[{symbol}] Non-200 HTTP status ({response.status}) on trading endpoint: {response.text[:250]}"
+            )
+            return
+
         try:
             data = json.loads(response.text)
-        except Exception:
-            data = {}
+        except Exception as exc:
+            self.logger.error(
+                f"[{symbol}] Non-JSON trading response ({exc}). Snippet: {response.text[:250]}"
+            )
+            return
+
+        if not isinstance(data, dict):
+            self.logger.error(f"[{symbol}] Trading payload is not a dict: {data}")
+            return
 
         market_cap = clean_number(data.get("MarketCap"))
         if market_cap == 0.0:
@@ -188,6 +233,12 @@ class BaseNgxSpider(scrapy.Spider):
             item["title"] = str(data.get("CompanyName")).strip()
         if not item.get("ticker") and data.get("Symbol"):
             item["ticker"] = str(data.get("Symbol")).strip()
+
+        if market_cap <= 0.0:
+            self.logger.warning(
+                f"[{symbol}] Could not determine valid market_cap for {symbol}. Trading payload: {data}"
+            )
+            return
 
         item["market_cap"] = market_cap
         yield item

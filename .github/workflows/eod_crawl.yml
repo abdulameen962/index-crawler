@@ -31,6 +31,10 @@ jobs:
         run: |
           python crawler_runner.py
 
+      - name: Validate dataset sanity
+        run: |
+          python -c "import json; [([exit(1) for item in json.load(open(f)) if item.get('price', 0) <= 0 or item.get('market_cap', 0) <= 0]) for f in ['index_funds/afribank.json', 'index_funds/oil_gas.json']]"
+
       - name: Commit and push updated index fund datasets
         run: |
           git config user.name "github-actions[bot]"

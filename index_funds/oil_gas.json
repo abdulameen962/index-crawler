@@ -1,9 +1,44 @@
 [
-{"title": "CONOIL PLC", "ticker": "CONOIL", "price": 210.0, "market_cap": 145729944570.0},
-{"title": "ETERNA PLC.", "ticker": "ETERNA", "price": 46.0, "market_cap": 100565605030.0},
-{"title": "JAPAUL GOLD & VENTURES PLC", "ticker": "JAPAULGOLD", "price": 2.6, "market_cap": 37083024461.6},
-{"title": "OANDO PLC", "ticker": "OANDO", "price": 33.15, "market_cap": 412101323745.15},
-{"title": "TOTALENERGIES MARKETING NIGERIA PLC", "ticker": "TOTAL", "price": 518.4, "market_cap": 176008120300.8},
-{"title": "SEPLAT ENERGY PLC", "ticker": "SEPLAT", "price": 16000.1, "market_cap": 9599172970456.1},
-{"title": "ARADEL HOLDINGS PLC", "ticker": "ARADEL", "price": 1530.0, "market_cap": 6647611870800.0}
+  {
+    "title": "CONOIL PLC",
+    "ticker": "CONOIL",
+    "price": 210.0,
+    "market_cap": 145729944570.0
+  },
+  {
+    "title": "ETERNA PLC.",
+    "ticker": "ETERNA",
+    "price": 46.0,
+    "market_cap": 100565605030.0
+  },
+  {
+    "title": "JAPAUL GOLD & VENTURES PLC",
+    "ticker": "JAPAULGOLD",
+    "price": 2.6,
+    "market_cap": 37083024461.6
+  },
+  {
+    "title": "OANDO PLC",
+    "ticker": "OANDO",
+    "price": 33.0,
+    "market_cap": 410236611873.0
+  },
+  {
+    "title": "TOTALENERGIES MARKETING NIGERIA PLC",
+    "ticker": "TOTAL",
+    "price": 518.4,
+    "market_cap": 176008120300.8
+  },
+  {
+    "title": "SEPLAT ENERGY PLC",
+    "ticker": "SEPLAT",
+    "price": 16000.1,
+    "market_cap": 9599172970456.1
+  },
+  {
+    "title": "ARADEL HOLDINGS PLC",
+    "ticker": "ARADEL",
+    "price": 1530.0,
+    "market_cap": 6647611870800.0
+  }
 ]
