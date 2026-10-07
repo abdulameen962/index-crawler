@@ -1,13 +1,13 @@
 [
-{"title": "ACCESSCORP PLC (ACCESSCORP)", "ticker": "ACCESSCORP", "market_cap": 0.0, "price": 0.0},
-{"title": "FCMB PLC (FCMB)", "ticker": "FCMB", "market_cap": 0.0, "price": 0.0},
-{"title": "GTCO PLC (GTCO)", "ticker": "GTCO", "market_cap": 0.0, "price": 0.0},
-{"title": "JBERGER PLC (JBERGER)", "ticker": "JBERGER", "market_cap": 0.0, "price": 0.0},
-{"title": "ZENITHBANK PLC (ZENITHBANK)", "ticker": "ZENITHBANK", "market_cap": 0.0, "price": 0.0},
-{"title": "OKOMUOIL PLC (OKOMUOIL)", "ticker": "OKOMUOIL", "market_cap": 0.0, "price": 0.0},
-{"title": "UCAP PLC (UCAP)", "ticker": "UCAP", "market_cap": 0.0, "price": 0.0},
-{"title": "VITAFOAM PLC (VITAFOAM)", "ticker": "VITAFOAM", "market_cap": 0.0, "price": 0.0},
-{"title": "WEMABANK PLC (WEMABANK)", "ticker": "WEMABANK", "market_cap": 0.0, "price": 0.0},
-{"title": "UBA PLC (UBA)", "ticker": "UBA", "market_cap": 0.0, "price": 0.0},
-{"title": "DANGCEM PLC (DANGCEM)", "ticker": "DANGCEM", "market_cap": 0.0, "price": 0.0}
+{"title": "ACCESS HOLDINGS PLC", "ticker": "ACCESSCORP", "price": 30.4, "market_cap": 1653024212323.2},
+{"title": "FCMB GROUP PLC.", "ticker": "FCMB", "price": 11.05, "market_cap": 728798255677.7},
+{"title": "GUARANTY TRUST HOLDING COMPANY PLC", "ticker": "GTCO", "price": 132.0, "market_cap": 4824630295848.0},
+{"title": "JULIUS BERGER NIGERIA PLC", "ticker": "JBERGER", "price": 310.8, "market_cap": 497280000000.0},
+{"title": "ZENITH BANK PLC", "ticker": "ZENITHBANK", "price": 135.7, "market_cap": 5573175931135.7},
+{"title": "THE OKOMU OIL PALM COMPANY PLC", "ticker": "OKOMUOIL", "price": 1276.2, "market_cap": 1217379942000.0},
+{"title": "UNITED CAPITAL PLC", "ticker": "UCAP", "price": 17.1, "market_cap": 307800000000.0},
+{"title": "VITAFOAM NIGERIA PLC", "ticker": "VITAFOAM", "price": 194.0, "market_cap": 291196498138.0},
+{"title": "WEMA BANK PLC.", "ticker": "WEMABANK", "price": 31.0, "market_cap": 1243685199834.0},
+{"title": "UNITED BANK FOR AFRICA PLC", "ticker": "UBA", "price": 44.55, "market_cap": 1968939609837.75},
+{"title": "DANGOTE CEMENT PLC", "ticker": "DANGCEM", "price": 1066.7, "market_cap": 17999025653041.7}
 ]
