@@ -2,20 +2,20 @@
   {
     "title": "ACCESS HOLDINGS PLC",
     "ticker": "ACCESSCORP",
-    "price": 28.5,
-    "market_cap": 1549710199053.0
+    "price": 28.95,
+    "market_cap": 1574179307459.1
   },
   {
     "title": "FCMB GROUP PLC.",
     "ticker": "FCMB",
-    "price": 11.0,
-    "market_cap": 725500526014.0
+    "price": 10.8,
+    "market_cap": 712309607359.2
   },
   {
     "title": "GUARANTY TRUST HOLDING COMPANY PLC",
     "ticker": "GTCO",
-    "price": 123.2,
-    "market_cap": 4502988276124.8
+    "price": 121.0,
+    "market_cap": 4422577771194.0
   },
   {
     "title": "JULIUS BERGER NIGERIA PLC",
@@ -26,8 +26,8 @@
   {
     "title": "ZENITH BANK PLC",
     "ticker": "ZENITHBANK",
-    "price": 120.5,
-    "market_cap": 4948914515120.5
+    "price": 120.0,
+    "market_cap": 4928379600120.0
   },
   {
     "title": "THE OKOMU OIL PALM COMPANY PLC",
@@ -48,10 +48,16 @@
     "market_cap": 262076848324.2
   },
   {
+    "title": "WEMA BANK PLC.",
+    "ticker": "WEMABANK",
+    "price": 31.1,
+    "market_cap": 1247697087575.4
+  },
+  {
     "title": "UNITED BANK FOR AFRICA PLC",
     "ticker": "UBA",
-    "price": 40.25,
-    "market_cap": 1778896056026.25
+    "price": 43.0,
+    "market_cap": 1900435538115.0
   },
   {
     "title": "DANGOTE CEMENT PLC",
